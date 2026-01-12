@@ -8,7 +8,6 @@
 #include <libtwl/gfx/gfxStatus.h>
 #include <libtwl/spi/spiFlash.h>
 #include "core/Environment.h"
-#include "core/mini-printf.h"
 #include "clearFast.h"
 #include "InverseKmpMatcher.h"
 #include "fat/dldi.h"
@@ -28,6 +27,7 @@
 #include "DSMode.h"
 #include "Arm7IoRegisterClearer.h"
 #include "NdsLoader.h"
+#include "core/mini-printf.h"
 
 #define AP_LIST_PATH      "/_pico/aplist.bin"
 #define BIOS_NDS7_PATH    "/_pico/biosnds7.rom"
