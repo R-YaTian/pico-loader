@@ -21,7 +21,7 @@
 #define DMA_CHANNEL_AES_OUT     0
 #define DMA_CHANNEL_AES_IN      1
 
-void TwlAes::SetupAes(const nds_header_twl_t* romHeader) const
+void TwlAes::SetupAes(const nds_header_twl_t* romHeader, const aes_u128_t* key0) const
 {
     // ensure AES is enabled
     REG_SCFG_EXT |= SCFG_EXT_AES;
@@ -33,24 +33,17 @@ void TwlAes::SetupAes(const nds_header_twl_t* romHeader) const
     aes_reset();
     aes_waitKeyBusy();
 
+    if (key0 != nullptr)
+    {
+        aes_setKey(0, key0);
+        aes_setKeySlot(0);
+        aes_waitKeyBusy();
+    }
+
     SetupModuleKeyXY(romHeader);
     SetupNandKeyX();
     aes_waitKeyBusy();
     (&REG_AES_SEED0)[KEY_SLOT_NAND * 3].words[3] = NAND_KEYY_WORD_3;
-}
-
-void TwlAes::SetupKeySlot(u32 keySlot, const aes_u128_t* key) const
-{
-    REG_AES_CNT = 0;
-
-    aes_reset();
-    aes_reset();
-    aes_waitKeyBusy();
-
-    aes_setKey(keySlot, key);
-
-    aes_setKeySlot(keySlot);
-    aes_waitKeyBusy();
 }
 
 void TwlAes::DecryptModuleAes(void* data, u32 length, const aes_u128_t* iv) const

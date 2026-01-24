@@ -240,7 +240,9 @@ void NdsLoader::Load(BootMode bootMode)
         if (_romHeader.SupportsDsiMode())
         {
             SetupTwlConfig();
-            TwlAes().SetupAes(&_romHeader);
+            aes_u128_t sslCertKey;
+            bool sslCertKeyLoaded = TryLoadSslCertKey(&sslCertKey);
+            TwlAes().SetupAes(&_romHeader, sslCertKeyLoaded ? &sslCertKey : nullptr);
         }
 
         RemapWram();
@@ -301,11 +303,6 @@ void NdsLoader::Load(BootMode bootMode)
 
     if (Environment::IsDsiMode() && _romHeader.SupportsDsiMode())
     {
-        if (!TrySetupSslCertKey())
-        {
-            LOG_WARNING("Failed to setup SSL cert key\n");
-        }
-
         SetupDsiDeviceList();
 
         // Set twl wram locking (REG_MBK9) settings from rom header
@@ -1020,26 +1017,24 @@ void NdsLoader::SetupDsiDeviceList()
     strcpy(deviceList->appFileName, _dsiwareSaveResult.romFilePath);
 }
 
-bool NdsLoader::TrySetupSslCertKey()
+bool NdsLoader::TryLoadSslCertKey(aes_u128_t* outKey)
 {
     if (!_romHeader.HasSslCertAccess())
     {
         // No SSL cert access needed
-        return true;
-    }
-
-    auto bios7File = std::make_unique<FIL>();
-    auto keyTable = std::make_unique_for_overwrite<aes_u128_t>();
-    UINT bytesRead = 0;
-    if (f_open(bios7File.get(), BIOS_DSI7_PATH, FA_OPEN_EXISTING | FA_READ) != FR_OK ||
-        f_lseek(bios7File.get(), 0xB5D8 + 0x30) != FR_OK ||
-        f_read(bios7File.get(), keyTable.get(), sizeof(aes_u128_t), &bytesRead) != FR_OK ||
-        bytesRead != sizeof(aes_u128_t))
-    {
         return false;
     }
 
-    TwlAes().SetupKeySlot(0, (const aes_u128_t*)keyTable.get());
+    auto bios7File = std::make_unique<FIL>();
+    UINT bytesRead = 0;
+    if (f_open(bios7File.get(), BIOS_DSI7_PATH, FA_OPEN_EXISTING | FA_READ) != FR_OK ||
+        f_lseek(bios7File.get(), 0xB5D8 + 0x30) != FR_OK ||
+        f_read(bios7File.get(), outKey, sizeof(aes_u128_t), &bytesRead) != FR_OK ||
+        bytesRead != sizeof(aes_u128_t))
+    {
+        LOG_WARNING("Failed to load SSL cert key\n");
+        return false;
+    }
 
     return true;
 }

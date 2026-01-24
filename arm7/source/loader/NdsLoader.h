@@ -5,6 +5,7 @@
 #include "BootMode.h"
 #include "ConsoleRegion.h"
 #include "UserLanguage.h"
+#include "TwlAes.h"
 
 struct dsi_devicelist_entry_t;
 
@@ -80,7 +81,7 @@ private:
     void SetupDsiDeviceList();
     void InsertArgv();
     void HandleHomebrewPatching();
-    bool TrySetupSslCertKey();
+    bool TryLoadSslCertKey(aes_u128_t* outKey);
     bool TrySetupDsiWareSave();
     bool TryDecryptSecureArea();
     void HandleIQueRegionFreePatching();
